@@ -1,145 +1,189 @@
 # go_computer_use_mcp_server
 
-MCP (Model Context Protocol) сервер на Go для управления компьютером. Использует библиотеку [robotgo](https://github.com/hightemp/robotgo) для автоматизации.
+MCP (Model Context Protocol) server in Go for computer automation. Uses [robotgo](https://github.com/hightemp/robotgo) library for desktop automation.
 
-## Возможности
+## Features
 
-- **Управление мышью**: перемещение, клики, перетаскивание, прокрутка
-- **Управление клавиатурой**: нажатие клавиш, ввод текста, горячие клавиши
-- **Работа с экраном**: захват скриншотов, получение цвета пикселя, информация о дисплеях
-- **Управление окнами**: перемещение, изменение размера, сворачивание/разворачивание
-- **Управление процессами**: список процессов, поиск, завершение
-- **Системные утилиты**: информация о системе, диалоги, паузы
+- **Mouse control**: movement, clicks, dragging, scrolling
+- **Keyboard control**: key presses, text input, hotkeys
+- **Screen operations**: screenshots, pixel color, display information
+- **Window management**: move, resize, minimize/maximize
+- **Process management**: list processes, search, terminate
+- **System utilities**: system info, dialogs, delays
 
-## Установка
+## Installation
 
-### Требования
+### Requirements
 
 - Go 1.21+
-- Для Linux: `libx11-dev`, `libxtst-dev`, `libxinerama-dev`, `libxcursor-dev`, `libxkbcommon-dev`
+- GCC compiler
+- X11 libraries (Linux)
+
+### Ubuntu/Debian
 
 ```bash
-# Ubuntu/Debian
-sudo apt-get install libx11-dev libxtst-dev libxinerama-dev libxcursor-dev libxkbcommon-dev
+# Go (if not installed)
+sudo snap install go --classic
 
-# Fedora
-sudo dnf install libX11-devel libXtst-devel libXinerama-devel libXcursor-devel libxkbcommon-devel
+# GCC
+sudo apt install gcc libc6-dev
+
+# X11
+sudo apt install libx11-dev xorg-dev libxtst-dev
+
+# Clipboard support
+sudo apt install xsel xclip
+
+# Bitmap support (for image operations)
+sudo apt install libpng++-dev
+
+# Event hook support
+sudo apt install xcb libxcb-xkb-dev x11-xkb-utils libx11-xcb-dev libxkbcommon-x11-dev libxkbcommon-dev
 ```
 
-### Сборка
+**One-liner:**
+```bash
+sudo apt install gcc libc6-dev libx11-dev xorg-dev libxtst-dev xsel xclip libpng++-dev xcb libxcb-xkb-dev x11-xkb-utils libx11-xcb-dev libxkbcommon-x11-dev libxkbcommon-dev
+```
+
+### Fedora
 
 ```bash
-# Скачать зависимости
+# GCC (if not installed)
+sudo dnf install gcc
+
+# X11
+sudo dnf install libX11-devel libXtst-devel
+
+# Clipboard support
+sudo dnf install xsel xclip
+
+# Bitmap support
+sudo dnf install libpng-devel
+
+# Event hook support
+sudo dnf install libxkbcommon-devel libxkbcommon-x11-devel xorg-x11-xkb-utils-devel
+```
+
+**One-liner:**
+```bash
+sudo dnf install gcc libX11-devel libXtst-devel xsel xclip libpng-devel libxkbcommon-devel libxkbcommon-x11-devel xorg-x11-xkb-utils-devel
+```
+
+### Build
+
+```bash
+# Download dependencies
 make deps
 
-# Собрать для текущей платформы
+# Build for current platform
 make build
 
-# Собрать для всех платформ
+# Build for all platforms
 make build-all
 ```
 
-## Запуск
+## Running
 
-### SSE транспорт (по умолчанию)
+### SSE transport (default)
 
 ```bash
 ./go_computer_use_mcp_server -t sse -h 0.0.0.0 -p 8080
 ```
 
-### Stdio транспорт
+### Stdio transport
 
 ```bash
 ./go_computer_use_mcp_server -t stdio
 ```
 
-### Параметры командной строки
+### Command line arguments
 
-| Параметр | Описание | По умолчанию |
-|----------|----------|--------------|
-| `-t` | Транспорт: `sse` или `stdio` | `sse` |
-| `-h` | Хост для SSE сервера | `0.0.0.0` |
-| `-p` | Порт для SSE сервера | `8080` |
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `-t` | Transport: `sse` or `stdio` | `sse` |
+| `-h` | Host for SSE server | `0.0.0.0` |
+| `-p` | Port for SSE server | `8080` |
 
-## Доступные инструменты (Tools)
+## Available Tools
 
-### Управление мышью (12 tools)
+### Mouse Control (12 tools)
 
-| Tool | Описание |
-|------|----------|
-| `mouse_move` | Перемещение курсора в абсолютные координаты |
-| `mouse_move_smooth` | Плавное перемещение курсора |
-| `mouse_move_relative` | Относительное перемещение курсора |
-| `mouse_get_position` | Получить текущую позицию курсора |
-| `mouse_click` | Клик мышью |
-| `mouse_click_at` | Переместить и кликнуть |
-| `mouse_toggle` | Нажать/отпустить кнопку мыши |
-| `mouse_drag` | Перетаскивание |
-| `mouse_drag_smooth` | Плавное перетаскивание |
-| `mouse_scroll` | Прокрутка |
-| `mouse_scroll_direction` | Прокрутка в направлении |
-| `mouse_scroll_smooth` | Плавная прокрутка |
+| Tool | Description |
+|------|-------------|
+| `mouse_move` | Move cursor to absolute coordinates |
+| `mouse_move_smooth` | Smooth cursor movement (human-like) |
+| `mouse_move_relative` | Relative cursor movement |
+| `mouse_get_position` | Get current cursor position |
+| `mouse_click` | Mouse click |
+| `mouse_click_at` | Move and click |
+| `mouse_toggle` | Press/release mouse button |
+| `mouse_drag` | Drag operation |
+| `mouse_drag_smooth` | Smooth drag operation |
+| `mouse_scroll` | Scroll |
+| `mouse_scroll_direction` | Scroll in direction |
+| `mouse_scroll_smooth` | Smooth scroll |
 
-### Управление клавиатурой (7 tools)
+### Keyboard Control (7 tools)
 
-| Tool | Описание |
-|------|----------|
-| `key_tap` | Нажатие клавиши (с модификаторами) |
-| `key_toggle` | Нажать/отпустить клавишу |
-| `type_text` | Ввод текста (UTF-8) |
-| `type_text_delayed` | Ввод текста с задержкой |
-| `clipboard_read` | Прочитать буфер обмена |
-| `clipboard_write` | Записать в буфер обмена |
-| `clipboard_paste` | Вставить через буфер обмена |
+| Tool | Description |
+|------|-------------|
+| `key_tap` | Key press (with modifiers) |
+| `key_toggle` | Press/release key |
+| `type_text` | Type text (UTF-8) |
+| `type_text_delayed` | Type text with delay |
+| `clipboard_read` | Read clipboard |
+| `clipboard_write` | Write to clipboard |
+| `clipboard_paste` | Paste via clipboard |
 
-### Работа с экраном (7 tools)
+### Screen Operations (7 tools)
 
-| Tool | Описание |
-|------|----------|
-| `screen_get_size` | Получить размер экрана |
-| `screen_get_displays_num` | Количество мониторов |
-| `screen_get_display_bounds` | Границы монитора |
-| `screen_capture` | Захват экрана (base64 PNG) |
-| `screen_capture_save` | Захват и сохранение в файл |
-| `screen_get_pixel_color` | Цвет пикселя по координатам |
-| `screen_get_mouse_color` | Цвет под курсором |
+| Tool | Description |
+|------|-------------|
+| `screen_get_size` | Get screen size |
+| `screen_get_displays_num` | Number of monitors |
+| `screen_get_display_bounds` | Monitor bounds |
+| `screen_capture` | Screen capture (returns MCP ImageContent) |
+| `screen_capture_save` | Capture and save to file |
+| `screen_get_pixel_color` | Pixel color at coordinates |
+| `screen_get_mouse_color` | Pixel color under cursor |
 
-### Управление окнами (9 tools)
+### Window Management (9 tools)
 
-| Tool | Описание |
-|------|----------|
-| `window_get_active` | Информация об активном окне |
-| `window_get_title` | Заголовок окна |
-| `window_get_bounds` | Границы окна |
-| `window_set_active` | Активировать окно |
-| `window_move` | Переместить окно |
-| `window_resize` | Изменить размер окна |
-| `window_minimize` | Свернуть окно |
-| `window_maximize` | Развернуть окно |
-| `window_close` | Закрыть окно |
+| Tool | Description |
+|------|-------------|
+| `window_get_active` | Active window information |
+| `window_get_title` | Window title |
+| `window_get_bounds` | Window bounds |
+| `window_set_active` | Activate window |
+| `window_move` | Move window |
+| `window_resize` | Resize window |
+| `window_minimize` | Minimize window |
+| `window_maximize` | Maximize window |
+| `window_close` | Close window |
 
-### Управление процессами (6 tools)
+### Process Management (6 tools)
 
-| Tool | Описание |
-|------|----------|
-| `process_list` | Список всех процессов |
-| `process_find_by_name` | Найти процессы по имени |
-| `process_get_name` | Имя процесса по PID |
-| `process_exists` | Проверить существование процесса |
-| `process_kill` | Завершить процесс |
-| `process_run` | Запустить команду |
+| Tool | Description |
+|------|-------------|
+| `process_list` | List all processes |
+| `process_find_by_name` | Find processes by name |
+| `process_get_name` | Get process name by PID |
+| `process_exists` | Check if process exists |
+| `process_kill` | Kill process |
+| `process_run` | Run command |
 
-### Системные утилиты (3 tools)
+### System Utilities (3 tools)
 
-| Tool | Описание |
-|------|----------|
-| `system_get_info` | Информация о системе |
-| `util_sleep` | Пауза |
-| `alert_show` | Показать диалог |
+| Tool | Description |
+|------|-------------|
+| `system_get_info` | System information |
+| `util_sleep` | Sleep/delay |
+| `alert_show` | Show dialog |
 
-## Примеры использования
+## Usage Examples
 
-### Перемещение мыши и клик
+### Move mouse and click
 
 ```json
 {
@@ -153,7 +197,7 @@ make build-all
 }
 ```
 
-### Ввод текста
+### Type text
 
 ```json
 {
@@ -165,7 +209,7 @@ make build-all
 }
 ```
 
-### Горячие клавиши
+### Hotkeys
 
 ```json
 {
@@ -177,7 +221,7 @@ make build-all
 }
 ```
 
-### Захват экрана
+### Screen capture
 
 ```json
 {
@@ -191,26 +235,26 @@ make build-all
 }
 ```
 
-## Поддерживаемые клавиши
+## Supported Keys
 
-### Буквы и цифры
+### Letters and numbers
 `a-z`, `A-Z`, `0-9`
 
-### Функциональные клавиши
+### Function keys
 `f1`-`f24`
 
-### Навигация
+### Navigation
 `up`, `down`, `left`, `right`, `home`, `end`, `pageup`, `pagedown`
 
-### Специальные
+### Special keys
 `backspace`, `delete`, `enter`, `tab`, `escape`, `space`, `insert`, `capslock`
 
-### Модификаторы
-`alt`, `ctrl`, `shift`, `cmd` (или `command`)
+### Modifiers
+`alt`, `ctrl`, `shift`, `cmd` (or `command`)
 
-### Мультимедиа
+### Multimedia
 `audio_mute`, `audio_vol_down`, `audio_vol_up`, `audio_play`, `audio_stop`, `audio_pause`
 
-## Лицензия
+## License
 
 MIT
