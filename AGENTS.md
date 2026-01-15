@@ -1,0 +1,1 @@
+Это проект go_computer_use_mcp_server MCP(Modal Context Protocol) сервер на golang.

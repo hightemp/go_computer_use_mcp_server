@@ -1,0 +1,29 @@
+# Temporary directory
+tmp/
+
+# Binaries
+go_computer_use_mcp_server
+go_computer_use_mcp_server-*
+*.exe
+
+# Environment
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files
+*.test
+coverage.out
+
+# Temporary files
+*.tmp
+*.log
