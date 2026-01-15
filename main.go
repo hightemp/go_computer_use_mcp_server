@@ -624,11 +624,12 @@ func screenCaptureHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 	// Base64 encode
 	base64Str := base64.StdEncoding.EncodeToString(buf.Bytes())
 
-	return mcp.NewToolResultText(jsonResponse(map[string]interface{}{
-		"image":    base64Str,
-		"format":   "png",
-		"encoding": "base64",
-	})), nil
+	// Return image using native MCP ImageContent
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{
+			mcp.NewImageContent(base64Str, "image/png"),
+		},
+	}, nil
 }
 
 func screenCaptureSaveHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
