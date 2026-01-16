@@ -44,13 +44,15 @@ Add to your Claude Desktop configuration file:
 }
 ```
 
-### Claude Code (claude-code CLI)
+### Claude Code
+
+Using CLI command:
 
 ```bash
 claude mcp add computer-use -- npx -y go-computer-use-mcp-server -t stdio
 ```
 
-Or add manually to `~/.claude/settings.json`:
+Or add manually to your project's `.mcp.json` file:
 
 ```json
 {
@@ -65,16 +67,16 @@ Or add manually to `~/.claude/settings.json`:
 
 ### OpenCode
 
-Add to your `opencode.json` configuration:
+Add to your `opencode.jsonc` configuration file:
 
-```json
+```jsonc
 {
+  "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "servers": {
-      "computer-use": {
-        "command": "npx",
-        "args": ["-y", "go-computer-use-mcp-server", "-t", "stdio"]
-      }
+    "computer-use": {
+      "type": "local",
+      "command": ["npx", "-y", "go-computer-use-mcp-server", "-t", "stdio"],
+      "enabled": true
     }
   }
 }
@@ -82,22 +84,23 @@ Add to your `opencode.json` configuration:
 
 ### Codex (OpenAI)
 
-Add to your Codex MCP configuration:
+Using CLI command:
 
-```json
-{
-  "mcpServers": {
-    "computer-use": {
-      "command": "npx",
-      "args": ["-y", "go-computer-use-mcp-server", "-t", "stdio"]
-    }
-  }
-}
+```bash
+codex mcp add computer-use -- npx -y go-computer-use-mcp-server -t stdio
+```
+
+Or add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.computer-use]
+command = "npx"
+args = ["-y", "go-computer-use-mcp-server", "-t", "stdio"]
 ```
 
 ### Cursor
 
-Add to your Cursor settings (Settings > MCP Servers):
+Add to your Cursor MCP configuration. Go to `Cursor Settings` > `Features` > `MCP Servers` and add:
 
 ```json
 {
@@ -112,7 +115,7 @@ Add to your Cursor settings (Settings > MCP Servers):
 
 ### Windsurf
 
-Add to your Windsurf MCP configuration:
+Add to `~/.codeium/mcp_config.json` or via `Settings` > `Cascade` > `MCP Servers` > `Add Server`:
 
 ```json
 {
@@ -127,14 +130,15 @@ Add to your Windsurf MCP configuration:
 
 ### Cline (VS Code Extension)
 
-Add to Cline MCP settings in VS Code:
+Click the MCP Servers icon in Cline panel, select "Configure" tab, then "Configure MCP Servers" to edit `cline_mcp_settings.json`:
 
 ```json
 {
   "mcpServers": {
     "computer-use": {
       "command": "npx",
-      "args": ["-y", "go-computer-use-mcp-server", "-t", "stdio"]
+      "args": ["-y", "go-computer-use-mcp-server", "-t", "stdio"],
+      "disabled": false
     }
   }
 }
