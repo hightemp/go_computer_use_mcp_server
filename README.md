@@ -11,7 +11,144 @@ MCP (Model Context Protocol) server in Go for computer automation. Uses [robotgo
 - **Process management**: list processes, search, terminate
 - **System utilities**: system info, dialogs, delays
 
-## Installation
+## Quick Start with npx
+
+The easiest way to run the server is via npx (requires Node.js 18+):
+
+```bash
+# Run with stdio transport (for MCP clients)
+npx go-computer-use-mcp-server -t stdio
+
+# Run with SSE transport
+npx go-computer-use-mcp-server -t sse -h 0.0.0.0 -p 8080
+```
+
+## Integration with AI Tools
+
+### Claude Desktop
+
+Add to your Claude Desktop configuration file:
+
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+**Linux**: `~/.config/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "computer-use": {
+      "command": "npx",
+      "args": ["-y", "go-computer-use-mcp-server", "-t", "stdio"]
+    }
+  }
+}
+```
+
+### Claude Code (claude-code CLI)
+
+```bash
+claude mcp add computer-use -- npx -y go-computer-use-mcp-server -t stdio
+```
+
+Or add manually to `~/.claude/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "computer-use": {
+      "command": "npx",
+      "args": ["-y", "go-computer-use-mcp-server", "-t", "stdio"]
+    }
+  }
+}
+```
+
+### OpenCode
+
+Add to your `opencode.json` configuration:
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "computer-use": {
+        "command": "npx",
+        "args": ["-y", "go-computer-use-mcp-server", "-t", "stdio"]
+      }
+    }
+  }
+}
+```
+
+### Codex (OpenAI)
+
+Add to your Codex MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "computer-use": {
+      "command": "npx",
+      "args": ["-y", "go-computer-use-mcp-server", "-t", "stdio"]
+    }
+  }
+}
+```
+
+### Cursor
+
+Add to your Cursor settings (Settings > MCP Servers):
+
+```json
+{
+  "mcpServers": {
+    "computer-use": {
+      "command": "npx",
+      "args": ["-y", "go-computer-use-mcp-server", "-t", "stdio"]
+    }
+  }
+}
+```
+
+### Windsurf
+
+Add to your Windsurf MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "computer-use": {
+      "command": "npx",
+      "args": ["-y", "go-computer-use-mcp-server", "-t", "stdio"]
+    }
+  }
+}
+```
+
+### Cline (VS Code Extension)
+
+Add to Cline MCP settings in VS Code:
+
+```json
+{
+  "mcpServers": {
+    "computer-use": {
+      "command": "npx",
+      "args": ["-y", "go-computer-use-mcp-server", "-t", "stdio"]
+    }
+  }
+}
+```
+
+### Generic MCP Client
+
+For any MCP-compatible client, use:
+
+```bash
+npx -y go-computer-use-mcp-server -t stdio
+```
+
+## Installation from Source
 
 ### Requirements
 
@@ -83,7 +220,7 @@ make build
 make build-all
 ```
 
-## Running
+## Running (from source)
 
 ### SSE transport (default)
 

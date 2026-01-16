@@ -1,6 +1,9 @@
 # Temporary directory
 tmp/
 
+# NPM build artifacts
+/native
+
 # Binaries
 go_computer_use_mcp_server
 go_computer_use_mcp_server-*

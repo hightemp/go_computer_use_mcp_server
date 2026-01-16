@@ -1,0 +1,39 @@
+{
+  "name": "go-computer-use-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for computer automation (mouse, keyboard, screen, windows, processes)",
+  "license": "MIT",
+  "bin": {
+    "go-computer-use-mcp-server": "bin/computer-use-mcp.js"
+  },
+  "files": [
+    "bin/computer-use-mcp.js",
+    "native/",
+    "README.md"
+  ],
+  "scripts": {
+    "build:npm": "./scripts/build-npm.sh",
+    "prepack": "./scripts/build-npm.sh"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "computer-use",
+    "automation",
+    "robotgo",
+    "desktop-automation",
+    "mouse",
+    "keyboard",
+    "screen",
+    "claude",
+    "ai"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hightemp/go_computer_use_mcp_server"
+  },
+  "author": "hightemp",
+  "engines": {
+    "node": ">=18"
+  }
+}
