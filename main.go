@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -39,12 +40,14 @@ func checkDisplayAvailable() error {
 	displayOnce.Do(func() {
 		displayChecked = true
 
-		// Проверяем переменную окружения DISPLAY
-		display := os.Getenv("DISPLAY")
-		if display == "" {
-			displayError = "DISPLAY environment variable is not set. X11 display is required for this MCP server. Please run with a valid DISPLAY or use Xvfb for headless environments"
-			displayAvailable = false
-			return
+		// Проверяем переменную окружения DISPLAY только на Linux (X11)
+		if runtime.GOOS == "linux" {
+			display := os.Getenv("DISPLAY")
+			if display == "" {
+				displayError = "DISPLAY environment variable is not set. X11 display is required for this MCP server. Please run with a valid DISPLAY or use Xvfb for headless environments"
+				displayAvailable = false
+				return
+			}
 		}
 
 		// Пробуем безопасно получить размер экрана
