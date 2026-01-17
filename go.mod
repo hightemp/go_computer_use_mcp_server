@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.11
 
 require (
-	github.com/hightemp/robotgo v0.0.0
+	github.com/hightemp/robotgo v0.0.0-20260117071024-a9e06c67dc4c
 	github.com/mark3labs/mcp-go v0.31.0
 )
 
@@ -39,5 +39,3 @@ require (
 	golang.org/x/image v0.33.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 )
-
-replace github.com/hightemp/robotgo => ./tmp/robotgo
