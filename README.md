@@ -52,6 +52,14 @@ Using CLI command:
 claude mcp add computer-use -- npx -y go-computer-use-mcp-server -t stdio
 ```
 
+```bash
+claude mcp add --transport stdio \
+  --env DISPLAY="$DISPLAY" \
+  --env XAUTHORITY="${XAUTHORITY:-$HOME/.Xauthority}" \
+  computer-use -- \
+  npx -y go-computer-use-mcp-server -t stdio
+```
+
 Or add manually to your project's `.mcp.json` file:
 
 ```json
@@ -96,6 +104,7 @@ Or add to `~/.codex/config.toml`:
 [mcp_servers.computer-use]
 command = "npx"
 args = ["-y", "go-computer-use-mcp-server", "-t", "stdio"]
+env_vars = ["DISPLAY", "XAUTHORITY"]
 ```
 
 ### Cursor
