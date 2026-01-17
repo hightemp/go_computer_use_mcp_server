@@ -408,3 +408,5 @@ make build-all
 ## License
 
 MIT
+
+![](https://asdertasd.site/counter/go_computer_use_mcp_server)
