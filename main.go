@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"image/png"
 	"log"
+	"os"
+	"sync"
 
 	"github.com/hightemp/robotgo"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -19,6 +21,61 @@ const (
 	ServerName    = "go_computer_use_mcp_server"
 	ServerVersion = "1.0.0"
 )
+
+// ==================== DISPLAY CHECK ====================
+
+var (
+	displayAvailable bool
+	displayChecked   bool
+	displayOnce      sync.Once
+	displayError     string
+)
+
+// checkDisplayAvailable проверяет доступность X11 дисплея
+// Вызывается один раз и кеширует результат
+func checkDisplayAvailable() error {
+	displayOnce.Do(func() {
+		displayChecked = true
+
+		// Проверяем переменную окружения DISPLAY
+		display := os.Getenv("DISPLAY")
+		if display == "" {
+			displayError = "DISPLAY environment variable is not set. X11 display is required for this MCP server. Please run with a valid DISPLAY or use Xvfb for headless environments"
+			displayAvailable = false
+			return
+		}
+
+		// Пробуем безопасно получить размер экрана
+		// Используем defer/recover на случай паники (хотя CGO panic не ловится)
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					displayError = fmt.Sprintf("X11 display check failed: %v", r)
+					displayAvailable = false
+				}
+			}()
+
+			// Эта функция может вызвать panic/segfault при отсутствии дисплея
+			_, _ = robotgo.GetScreenSize()
+			displayAvailable = true
+		}()
+	})
+
+	if !displayAvailable && displayChecked {
+		return fmt.Errorf("%s", displayError)
+	}
+	return nil
+}
+
+// withDisplayCheck оборачивает handler проверкой доступности дисплея
+func withDisplayCheck(handler server.ToolHandlerFunc) server.ToolHandlerFunc {
+	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		if err := checkDisplayAvailable(); err != nil {
+			return nil, err
+		}
+		return handler(ctx, request)
+	}
+}
 
 // Helper function to create JSON response
 func jsonResponse(data interface{}) string {
@@ -1052,7 +1109,7 @@ func registerMouseTools(mcpServer *server.MCPServer) {
 		mcp.WithNumber("x", mcp.Required(), mcp.Description("X coordinate")),
 		mcp.WithNumber("y", mcp.Required(), mcp.Description("Y coordinate")),
 		mcp.WithNumber("display_id", mcp.Description("Display ID (optional)")),
-	), mouseMoveHandler)
+	), withDisplayCheck(mouseMoveHandler))
 
 	// mouse_move_smooth
 	mcpServer.AddTool(mcp.NewTool("mouse_move_smooth",
@@ -1061,26 +1118,26 @@ func registerMouseTools(mcpServer *server.MCPServer) {
 		mcp.WithNumber("y", mcp.Required(), mcp.Description("Y coordinate")),
 		mcp.WithNumber("low", mcp.Description("Low speed factor (default: 1.0)")),
 		mcp.WithNumber("high", mcp.Description("High speed factor (default: 3.0)")),
-	), mouseMoveSmoothHandler)
+	), withDisplayCheck(mouseMoveSmoothHandler))
 
 	// mouse_move_relative
 	mcpServer.AddTool(mcp.NewTool("mouse_move_relative",
 		mcp.WithDescription("Move mouse cursor relative to current position"),
 		mcp.WithNumber("x", mcp.Required(), mcp.Description("X offset")),
 		mcp.WithNumber("y", mcp.Required(), mcp.Description("Y offset")),
-	), mouseMoveRelativeHandler)
+	), withDisplayCheck(mouseMoveRelativeHandler))
 
 	// mouse_get_position
 	mcpServer.AddTool(mcp.NewTool("mouse_get_position",
 		mcp.WithDescription("Get current mouse cursor position"),
-	), mouseGetPositionHandler)
+	), withDisplayCheck(mouseGetPositionHandler))
 
 	// mouse_click
 	mcpServer.AddTool(mcp.NewTool("mouse_click",
 		mcp.WithDescription("Perform mouse click"),
 		mcp.WithString("button", mcp.Description("Button: 'left', 'right', 'center' (default: 'left')")),
 		mcp.WithBoolean("double", mcp.Description("Double click (default: false)")),
-	), mouseClickHandler)
+	), withDisplayCheck(mouseClickHandler))
 
 	// mouse_click_at
 	mcpServer.AddTool(mcp.NewTool("mouse_click_at",
@@ -1089,14 +1146,14 @@ func registerMouseTools(mcpServer *server.MCPServer) {
 		mcp.WithNumber("y", mcp.Required(), mcp.Description("Y coordinate")),
 		mcp.WithString("button", mcp.Description("Button: 'left', 'right', 'center' (default: 'left')")),
 		mcp.WithBoolean("double", mcp.Description("Double click (default: false)")),
-	), mouseClickAtHandler)
+	), withDisplayCheck(mouseClickAtHandler))
 
 	// mouse_toggle
 	mcpServer.AddTool(mcp.NewTool("mouse_toggle",
 		mcp.WithDescription("Press or release mouse button"),
 		mcp.WithString("button", mcp.Description("Button: 'left', 'right', 'center' (default: 'left')")),
 		mcp.WithBoolean("down", mcp.Description("true to press down, false to release (default: true)")),
-	), mouseToggleHandler)
+	), withDisplayCheck(mouseToggleHandler))
 
 	// mouse_drag
 	mcpServer.AddTool(mcp.NewTool("mouse_drag",
@@ -1104,7 +1161,7 @@ func registerMouseTools(mcpServer *server.MCPServer) {
 		mcp.WithNumber("x", mcp.Required(), mcp.Description("X coordinate")),
 		mcp.WithNumber("y", mcp.Required(), mcp.Description("Y coordinate")),
 		mcp.WithString("button", mcp.Description("Button to hold during drag (default: 'left')")),
-	), mouseDragHandler)
+	), withDisplayCheck(mouseDragHandler))
 
 	// mouse_drag_smooth
 	mcpServer.AddTool(mcp.NewTool("mouse_drag_smooth",
@@ -1114,7 +1171,7 @@ func registerMouseTools(mcpServer *server.MCPServer) {
 		mcp.WithNumber("low", mcp.Description("Low speed factor (default: 1.0)")),
 		mcp.WithNumber("high", mcp.Description("High speed factor (default: 3.0)")),
 		mcp.WithString("button", mcp.Description("Button to hold during drag (default: 'left')")),
-	), mouseDragSmoothHandler)
+	), withDisplayCheck(mouseDragSmoothHandler))
 
 	// mouse_scroll
 	mcpServer.AddTool(mcp.NewTool("mouse_scroll",
@@ -1122,14 +1179,14 @@ func registerMouseTools(mcpServer *server.MCPServer) {
 		mcp.WithNumber("x", mcp.Required(), mcp.Description("Horizontal scroll amount")),
 		mcp.WithNumber("y", mcp.Required(), mcp.Description("Vertical scroll amount")),
 		mcp.WithNumber("display_id", mcp.Description("Display ID (optional)")),
-	), mouseScrollHandler)
+	), withDisplayCheck(mouseScrollHandler))
 
 	// mouse_scroll_direction
 	mcpServer.AddTool(mcp.NewTool("mouse_scroll_direction",
 		mcp.WithDescription("Scroll in a specific direction"),
 		mcp.WithNumber("amount", mcp.Required(), mcp.Description("Scroll amount")),
 		mcp.WithString("direction", mcp.Required(), mcp.Description("Direction: 'up', 'down', 'left', 'right'")),
-	), mouseScrollDirectionHandler)
+	), withDisplayCheck(mouseScrollDirectionHandler))
 
 	// mouse_scroll_smooth
 	mcpServer.AddTool(mcp.NewTool("mouse_scroll_smooth",
@@ -1137,7 +1194,7 @@ func registerMouseTools(mcpServer *server.MCPServer) {
 		mcp.WithNumber("to", mcp.Required(), mcp.Description("Target scroll position")),
 		mcp.WithNumber("num", mcp.Description("Number of scroll steps (default: 5)")),
 		mcp.WithNumber("delay", mcp.Description("Delay between steps in ms (default: 100)")),
-	), mouseScrollSmoothHandler)
+	), withDisplayCheck(mouseScrollSmoothHandler))
 }
 
 func registerKeyboardTools(mcpServer *server.MCPServer) {
@@ -1146,45 +1203,45 @@ func registerKeyboardTools(mcpServer *server.MCPServer) {
 		mcp.WithDescription("Tap a key (press and release)"),
 		mcp.WithString("key", mcp.Required(), mcp.Description("Key to tap (e.g., 'a', 'enter', 'f1')")),
 		mcp.WithArray("modifiers", mcp.Description("Modifier keys: 'alt', 'ctrl', 'shift', 'cmd'")),
-	), keyTapHandler)
+	), withDisplayCheck(keyTapHandler))
 
 	// key_toggle
 	mcpServer.AddTool(mcp.NewTool("key_toggle",
 		mcp.WithDescription("Press or release a key"),
 		mcp.WithString("key", mcp.Required(), mcp.Description("Key to toggle")),
 		mcp.WithBoolean("down", mcp.Description("true to press down, false to release (default: true)")),
-	), keyToggleHandler)
+	), withDisplayCheck(keyToggleHandler))
 
 	// type_text
 	mcpServer.AddTool(mcp.NewTool("type_text",
 		mcp.WithDescription("Type text (supports UTF-8)"),
 		mcp.WithString("text", mcp.Required(), mcp.Description("Text to type")),
 		mcp.WithNumber("delay", mcp.Description("Delay between characters in ms (optional)")),
-	), typeTextHandler)
+	), withDisplayCheck(typeTextHandler))
 
 	// type_text_delayed
 	mcpServer.AddTool(mcp.NewTool("type_text_delayed",
 		mcp.WithDescription("Type text with a specific delay between characters"),
 		mcp.WithString("text", mcp.Required(), mcp.Description("Text to type")),
 		mcp.WithNumber("delay", mcp.Required(), mcp.Description("Delay between characters in ms")),
-	), typeTextDelayedHandler)
+	), withDisplayCheck(typeTextDelayedHandler))
 
 	// clipboard_read
 	mcpServer.AddTool(mcp.NewTool("clipboard_read",
 		mcp.WithDescription("Read text from clipboard"),
-	), clipboardReadHandler)
+	), withDisplayCheck(clipboardReadHandler))
 
 	// clipboard_write
 	mcpServer.AddTool(mcp.NewTool("clipboard_write",
 		mcp.WithDescription("Write text to clipboard"),
 		mcp.WithString("text", mcp.Required(), mcp.Description("Text to write to clipboard")),
-	), clipboardWriteHandler)
+	), withDisplayCheck(clipboardWriteHandler))
 
 	// clipboard_paste
 	mcpServer.AddTool(mcp.NewTool("clipboard_paste",
 		mcp.WithDescription("Paste text via clipboard (writes to clipboard and simulates Ctrl+V/Cmd+V)"),
 		mcp.WithString("text", mcp.Required(), mcp.Description("Text to paste")),
-	), clipboardPasteHandler)
+	), withDisplayCheck(clipboardPasteHandler))
 }
 
 func registerScreenTools(mcpServer *server.MCPServer) {
@@ -1192,18 +1249,18 @@ func registerScreenTools(mcpServer *server.MCPServer) {
 	mcpServer.AddTool(mcp.NewTool("screen_get_size",
 		mcp.WithDescription("Get screen size"),
 		mcp.WithNumber("display_id", mcp.Description("Display ID (optional)")),
-	), screenGetSizeHandler)
+	), withDisplayCheck(screenGetSizeHandler))
 
 	// screen_get_displays_num
 	mcpServer.AddTool(mcp.NewTool("screen_get_displays_num",
 		mcp.WithDescription("Get number of displays/monitors"),
-	), screenGetDisplaysNumHandler)
+	), withDisplayCheck(screenGetDisplaysNumHandler))
 
 	// screen_get_display_bounds
 	mcpServer.AddTool(mcp.NewTool("screen_get_display_bounds",
 		mcp.WithDescription("Get display bounds (x, y, width, height)"),
 		mcp.WithNumber("display_id", mcp.Required(), mcp.Description("Display ID")),
-	), screenGetDisplayBoundsHandler)
+	), withDisplayCheck(screenGetDisplayBoundsHandler))
 
 	// screen_capture
 	mcpServer.AddTool(mcp.NewTool("screen_capture",
@@ -1213,7 +1270,7 @@ func registerScreenTools(mcpServer *server.MCPServer) {
 		mcp.WithNumber("width", mcp.Description("Width (optional)")),
 		mcp.WithNumber("height", mcp.Description("Height (optional)")),
 		mcp.WithNumber("display_id", mcp.Description("Display ID (optional)")),
-	), screenCaptureHandler)
+	), withDisplayCheck(screenCaptureHandler))
 
 	// screen_capture_save
 	mcpServer.AddTool(mcp.NewTool("screen_capture_save",
@@ -1223,7 +1280,7 @@ func registerScreenTools(mcpServer *server.MCPServer) {
 		mcp.WithNumber("y", mcp.Description("Y coordinate (optional)")),
 		mcp.WithNumber("width", mcp.Description("Width (optional)")),
 		mcp.WithNumber("height", mcp.Description("Height (optional)")),
-	), screenCaptureSaveHandler)
+	), withDisplayCheck(screenCaptureSaveHandler))
 
 	// screen_get_pixel_color
 	mcpServer.AddTool(mcp.NewTool("screen_get_pixel_color",
@@ -1231,38 +1288,38 @@ func registerScreenTools(mcpServer *server.MCPServer) {
 		mcp.WithNumber("x", mcp.Required(), mcp.Description("X coordinate")),
 		mcp.WithNumber("y", mcp.Required(), mcp.Description("Y coordinate")),
 		mcp.WithNumber("display_id", mcp.Description("Display ID (optional)")),
-	), screenGetPixelColorHandler)
+	), withDisplayCheck(screenGetPixelColorHandler))
 
 	// screen_get_mouse_color
 	mcpServer.AddTool(mcp.NewTool("screen_get_mouse_color",
 		mcp.WithDescription("Get pixel color at current mouse position"),
 		mcp.WithNumber("display_id", mcp.Description("Display ID (optional)")),
-	), screenGetMouseColorHandler)
+	), withDisplayCheck(screenGetMouseColorHandler))
 }
 
 func registerWindowTools(mcpServer *server.MCPServer) {
 	// window_get_active
 	mcpServer.AddTool(mcp.NewTool("window_get_active",
 		mcp.WithDescription("Get active window information"),
-	), windowGetActiveHandler)
+	), withDisplayCheck(windowGetActiveHandler))
 
 	// window_get_title
 	mcpServer.AddTool(mcp.NewTool("window_get_title",
 		mcp.WithDescription("Get window title"),
 		mcp.WithNumber("pid", mcp.Description("Process ID (optional, uses active window if not specified)")),
-	), windowGetTitleHandler)
+	), withDisplayCheck(windowGetTitleHandler))
 
 	// window_get_bounds
 	mcpServer.AddTool(mcp.NewTool("window_get_bounds",
 		mcp.WithDescription("Get window bounds (x, y, width, height)"),
 		mcp.WithNumber("pid", mcp.Required(), mcp.Description("Process ID")),
-	), windowGetBoundsHandler)
+	), withDisplayCheck(windowGetBoundsHandler))
 
 	// window_set_active
 	mcpServer.AddTool(mcp.NewTool("window_set_active",
 		mcp.WithDescription("Activate window by PID"),
 		mcp.WithNumber("pid", mcp.Required(), mcp.Description("Process ID")),
-	), windowSetActiveHandler)
+	), withDisplayCheck(windowSetActiveHandler))
 
 	// window_move
 	mcpServer.AddTool(mcp.NewTool("window_move",
@@ -1270,7 +1327,7 @@ func registerWindowTools(mcpServer *server.MCPServer) {
 		mcp.WithNumber("pid", mcp.Required(), mcp.Description("Process ID")),
 		mcp.WithNumber("x", mcp.Required(), mcp.Description("X coordinate")),
 		mcp.WithNumber("y", mcp.Required(), mcp.Description("Y coordinate")),
-	), windowMoveHandler)
+	), withDisplayCheck(windowMoveHandler))
 
 	// window_resize
 	mcpServer.AddTool(mcp.NewTool("window_resize",
@@ -1278,71 +1335,71 @@ func registerWindowTools(mcpServer *server.MCPServer) {
 		mcp.WithNumber("pid", mcp.Required(), mcp.Description("Process ID")),
 		mcp.WithNumber("width", mcp.Required(), mcp.Description("New width")),
 		mcp.WithNumber("height", mcp.Required(), mcp.Description("New height")),
-	), windowResizeHandler)
+	), withDisplayCheck(windowResizeHandler))
 
 	// window_minimize
 	mcpServer.AddTool(mcp.NewTool("window_minimize",
 		mcp.WithDescription("Minimize window"),
 		mcp.WithNumber("pid", mcp.Required(), mcp.Description("Process ID")),
-	), windowMinimizeHandler)
+	), withDisplayCheck(windowMinimizeHandler))
 
 	// window_maximize
 	mcpServer.AddTool(mcp.NewTool("window_maximize",
 		mcp.WithDescription("Maximize window"),
 		mcp.WithNumber("pid", mcp.Required(), mcp.Description("Process ID")),
-	), windowMaximizeHandler)
+	), withDisplayCheck(windowMaximizeHandler))
 
 	// window_close
 	mcpServer.AddTool(mcp.NewTool("window_close",
 		mcp.WithDescription("Close window"),
 		mcp.WithNumber("pid", mcp.Description("Process ID (optional, closes active window if not specified)")),
-	), windowCloseHandler)
+	), withDisplayCheck(windowCloseHandler))
 }
 
 func registerProcessTools(mcpServer *server.MCPServer) {
 	// process_list
 	mcpServer.AddTool(mcp.NewTool("process_list",
 		mcp.WithDescription("List all running processes"),
-	), processListHandler)
+	), withDisplayCheck(processListHandler))
 
 	// process_find_by_name
 	mcpServer.AddTool(mcp.NewTool("process_find_by_name",
 		mcp.WithDescription("Find processes by name (case insensitive)"),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Process name to search for")),
-	), processFindByNameHandler)
+	), withDisplayCheck(processFindByNameHandler))
 
 	// process_get_name
 	mcpServer.AddTool(mcp.NewTool("process_get_name",
 		mcp.WithDescription("Get process name by PID"),
 		mcp.WithNumber("pid", mcp.Required(), mcp.Description("Process ID")),
-	), processGetNameHandler)
+	), withDisplayCheck(processGetNameHandler))
 
 	// process_exists
 	mcpServer.AddTool(mcp.NewTool("process_exists",
 		mcp.WithDescription("Check if process exists"),
 		mcp.WithNumber("pid", mcp.Required(), mcp.Description("Process ID")),
-	), processExistsHandler)
+	), withDisplayCheck(processExistsHandler))
 
 	// process_kill
 	mcpServer.AddTool(mcp.NewTool("process_kill",
 		mcp.WithDescription("Kill process by PID"),
 		mcp.WithNumber("pid", mcp.Required(), mcp.Description("Process ID")),
-	), processKillHandler)
+	), withDisplayCheck(processKillHandler))
 
 	// process_run
 	mcpServer.AddTool(mcp.NewTool("process_run",
 		mcp.WithDescription("Run shell command"),
 		mcp.WithString("command", mcp.Required(), mcp.Description("Command to run")),
-	), processRunHandler)
+	), withDisplayCheck(processRunHandler))
 }
 
 func registerSystemTools(mcpServer *server.MCPServer) {
 	// system_get_info
 	mcpServer.AddTool(mcp.NewTool("system_get_info",
 		mcp.WithDescription("Get system information"),
-	), systemGetInfoHandler)
+	), withDisplayCheck(systemGetInfoHandler))
 
-	// util_sleep
+	// util_sleep - не требует дисплея
 	mcpServer.AddTool(mcp.NewTool("util_sleep",
 		mcp.WithDescription("Sleep/pause for specified milliseconds"),
 		mcp.WithNumber("milliseconds", mcp.Required(), mcp.Description("Milliseconds to sleep")),
@@ -1355,7 +1412,7 @@ func registerSystemTools(mcpServer *server.MCPServer) {
 		mcp.WithString("message", mcp.Required(), mcp.Description("Dialog message")),
 		mcp.WithString("default_btn", mcp.Description("Default button text (default: 'OK')")),
 		mcp.WithString("cancel_btn", mcp.Description("Cancel button text (optional)")),
-	), alertShowHandler)
+	), withDisplayCheck(alertShowHandler))
 }
 
 func main() {
