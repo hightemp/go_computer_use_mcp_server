@@ -10,6 +10,8 @@ import (
 	"image/png"
 	"log"
 	"os"
+	"os/exec"
+	"strings"
 	"sync"
 
 	"github.com/hightemp/robotgo"
@@ -1031,12 +1033,56 @@ func processRunHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.C
 		return nil, err
 	}
 
-	output, err := robotgo.Run(command)
+	// Get optional background parameter (default: true for non-blocking execution)
+	background := true
+	if bg, ok := args["background"]; ok {
+		if bgBool, ok := bg.(bool); ok {
+			background = bgBool
+		}
+	}
+
+	// Parse command into parts
+	parts := strings.Fields(command)
+	if len(parts) == 0 {
+		return nil, fmt.Errorf("empty command")
+	}
+
+	cmdName := parts[0]
+	cmdArgs := []string{}
+	if len(parts) > 1 {
+		cmdArgs = parts[1:]
+	}
+
+	cmd := exec.Command(cmdName, cmdArgs...)
+
+	if background {
+		// Start process in background (non-blocking) - suitable for GUI apps
+		err := cmd.Start()
+		if err != nil {
+			return nil, fmt.Errorf("failed to start command: %w", err)
+		}
+
+		pid := 0
+		if cmd.Process != nil {
+			pid = cmd.Process.Pid
+		}
+
+		return mcp.NewToolResultText(jsonResponse(map[string]interface{}{
+			"status":  "started",
+			"pid":     pid,
+			"command": command,
+			"message": "Process started in background",
+		})), nil
+	}
+
+	// Run process and wait for completion (blocking) - suitable for CLI tools
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("failed to run command: %w", err)
+		return nil, fmt.Errorf("failed to run command: %w, output: %s", err, string(output))
 	}
 
 	return mcp.NewToolResultText(jsonResponse(map[string]interface{}{
+		"status": "completed",
 		"output": string(output),
 	})), nil
 }
@@ -1388,8 +1434,9 @@ func registerProcessTools(mcpServer *server.MCPServer) {
 
 	// process_run
 	mcpServer.AddTool(mcp.NewTool("process_run",
-		mcp.WithDescription("Run shell command"),
+		mcp.WithDescription("Run shell command. By default runs in background (non-blocking) which is suitable for GUI apps. Set background=false to wait for command completion."),
 		mcp.WithString("command", mcp.Required(), mcp.Description("Command to run")),
+		mcp.WithBoolean("background", mcp.Description("Run in background without waiting (default: true). Set to false for CLI commands where you need the output.")),
 	), withDisplayCheck(processRunHandler))
 }
 
