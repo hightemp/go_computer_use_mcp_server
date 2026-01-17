@@ -372,7 +372,12 @@ func mouseDragSmoothHandler(ctx context.Context, request mcp.CallToolRequest) (*
 	high := getFloatArg(args, "high", 3.0)
 	button := getStringArg(args, "button", "left")
 
-	robotgo.DragSmooth(x, y, low, high, button)
+	// robotgo.DragSmooth forwards args into MoveSmooth and expects (low float64, high float64, mouseDelay int).
+	// We implement button support manually to avoid type-assertion panics.
+	_ = robotgo.Toggle(button)
+	robotgo.MilliSleep(50)
+	_ = robotgo.MoveSmooth(x, y, low, high)
+	_ = robotgo.Toggle(button, "up")
 
 	return mcp.NewToolResultText(jsonResponse(map[string]interface{}{
 		"status":  "success",
