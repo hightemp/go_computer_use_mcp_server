@@ -646,36 +646,39 @@ func screenCaptureHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 	height := getIntArg(args, "height", -1)
 	displayId := getIntArg(args, "display_id", -1)
 
-	var img *robotgo.CBitmap
+	// Validate display_id if provided
+	if displayId >= 0 {
+		numDisplays := robotgo.DisplaysNum()
+		if displayId >= numDisplays {
+			return nil, fmt.Errorf("invalid display_id: %d (available displays: 0-%d)", displayId, numDisplays-1)
+		}
+	}
+
+	// Use CaptureImg which is safer and returns error
 	var captureArgs []int
+
+	if displayId >= 0 {
+		// Set display ID globally before capture
+		robotgo.DisplayID = displayId
+		defer func() { robotgo.DisplayID = -1 }() // Reset after capture
+	}
 
 	if x >= 0 && y >= 0 && width > 0 && height > 0 {
 		captureArgs = append(captureArgs, x, y, width, height)
 	}
-	if displayId >= 0 {
-		if len(captureArgs) == 0 {
-			// Need to capture full screen first
-			sw, sh := robotgo.GetScreenSize()
-			captureArgs = append(captureArgs, 0, 0, sw, sh)
-		}
-		captureArgs = append(captureArgs, displayId)
+
+	img, err := robotgo.CaptureImg(captureArgs...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to capture screen: %w", err)
 	}
 
-	var bitmap robotgo.CBitmap
-	if len(captureArgs) > 0 {
-		bitmap = robotgo.CaptureScreen(captureArgs...)
-	} else {
-		bitmap = robotgo.CaptureScreen()
+	if img == nil {
+		return nil, fmt.Errorf("failed to capture screen: nil image returned")
 	}
-	img = &bitmap
-	defer robotgo.FreeBitmap(*img)
-
-	// Convert to image
-	image := robotgo.ToImage(*img)
 
 	// Encode to PNG
 	var buf bytes.Buffer
-	err := png.Encode(&buf, image)
+	err = png.Encode(&buf, img)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode image: %w", err)
 	}
