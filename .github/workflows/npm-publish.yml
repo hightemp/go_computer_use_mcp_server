@@ -20,14 +20,19 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc libc6-dev libx11-dev xorg-dev libxtst-dev \
-            xsel xclip libpng++-dev xcb libxcb-xkb-dev x11-xkb-utils \
-            libx11-xcb-dev libxkbcommon-x11-dev libxkbcommon-dev
+          sudo apt-get install -y \
+            gcc libc6-dev \
+            libx11-dev xorg-dev libxtst-dev \
+            xsel xclip \
+            libpng++-dev \
+            xcb libxcb-xkb-dev x11-xkb-utils \
+            libx11-xcb-dev libxkbcommon-x11-dev libxkbcommon-dev \
+            libtesseract-dev libleptonica-dev
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23.x"
+          go-version: "1.24.x"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
