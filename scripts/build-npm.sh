@@ -4,6 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_DIR="$ROOT_DIR/native"
 
+VERSION="$(cat "$ROOT_DIR/VERSION" | tr -d '[:space:]')"
+echo "Version: ${VERSION}"
+
 mkdir -p "$OUT_DIR"
 
 build_target() {
@@ -16,7 +19,7 @@ build_target() {
   mkdir -p "$target_dir"
   echo "Building ${os}/${arch}..."
   CGO_ENABLED=1 GOOS="$os" GOARCH="$arch" \
-    go build -ldflags "-s -w" -o "$target_dir/$binary_name" "$ROOT_DIR"
+    go build -ldflags "-s -w -X main.ServerVersion=${VERSION}" -o "$target_dir/$binary_name" "$ROOT_DIR"
 }
 
 # Note: CGO is required for robotgo library
