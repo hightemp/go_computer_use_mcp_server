@@ -456,6 +456,161 @@ class TestScreenGetMouseColor:
         assert_color_near(color, "0000ff", tolerance=50)
 
 
+class TestScreenCaptureAnnotations:
+    """Тесты параметров аннотаций screen_capture (show_cursor, show_grid, show_rulers, grid_size)"""
+
+    @pytest.mark.gui
+    def test_show_cursor_returns_valid_image(self, mcp_client: MCPClient):
+        """show_cursor=true возвращает валидный PNG"""
+        result = mcp_client.call_tool("screen_capture", {"show_cursor": True})
+        assert result.success, f"screen_capture with show_cursor failed: {result.error}"
+        image = decode_screenshot(result.content)
+        assert image.width > 0 and image.height > 0
+
+    @pytest.mark.gui
+    def test_show_grid_returns_valid_image(self, mcp_client: MCPClient):
+        """show_grid=true возвращает валидный PNG"""
+        result = mcp_client.call_tool("screen_capture", {"show_grid": True})
+        assert result.success, f"screen_capture with show_grid failed: {result.error}"
+        image = decode_screenshot(result.content)
+        assert image.width > 0 and image.height > 0
+
+    @pytest.mark.gui
+    def test_show_rulers_returns_valid_image(self, mcp_client: MCPClient):
+        """show_rulers=true возвращает валидный PNG"""
+        result = mcp_client.call_tool("screen_capture", {"show_rulers": True})
+        assert result.success, f"screen_capture with show_rulers failed: {result.error}"
+        image = decode_screenshot(result.content)
+        assert image.width > 0 and image.height > 0
+
+    @pytest.mark.gui
+    def test_all_annotations_combined(self, mcp_client: MCPClient):
+        """Все аннотации вместе возвращают валидный PNG"""
+        result = mcp_client.call_tool(
+            "screen_capture",
+            {"show_cursor": True, "show_grid": True, "show_rulers": True, "grid_size": 100},
+        )
+        assert result.success, f"Combined annotations failed: {result.error}"
+        image = decode_screenshot(result.content)
+        assert image.width > 0 and image.height > 0
+
+    @pytest.mark.gui
+    def test_annotations_do_not_change_image_size(self, mcp_client: MCPClient):
+        """Аннотации не изменяют размер изображения"""
+        params = {"x": 0, "y": 0, "width": 300, "height": 300}
+
+        result_plain = mcp_client.call_tool("screen_capture", params)
+        assert result_plain.success
+        plain_img = decode_screenshot(result_plain.content)
+
+        result_ann = mcp_client.call_tool(
+            "screen_capture",
+            {**params, "show_cursor": True, "show_grid": True, "show_rulers": True},
+        )
+        assert result_ann.success
+        ann_img = decode_screenshot(result_ann.content)
+
+        assert plain_img.size == ann_img.size, (
+            f"Annotated image size {ann_img.size} != plain size {plain_img.size}"
+        )
+
+    @pytest.mark.gui
+    def test_annotations_region_correct_size(self, mcp_client: MCPClient):
+        """Аннотированный захват региона имеет правильный размер"""
+        result = mcp_client.call_tool(
+            "screen_capture",
+            {"x": 50, "y": 50, "width": 200, "height": 150, "show_cursor": True, "show_rulers": True},
+        )
+        assert result.success
+        image = decode_screenshot(result.content)
+        assert image.width == 200, f"Expected width 200, got {image.width}"
+        assert image.height == 150, f"Expected height 150, got {image.height}"
+
+    @pytest.mark.gui
+    def test_show_cursor_adds_red_pixels_near_cursor(self, mcp_client: MCPClient):
+        """show_cursor=true добавляет красные пиксели рядом с позицией курсора"""
+        # Перемещаем курсор в центр области захвата
+        region_x, region_y, region_size = 100, 100, 80
+        cx = region_x + region_size // 2
+        cy = region_y + region_size // 2
+
+        mcp_client.call_tool("mouse_move", {"x": cx, "y": cy})
+        time.sleep(0.15)
+
+        result = mcp_client.call_tool(
+            "screen_capture",
+            {"x": region_x, "y": region_y, "width": region_size, "height": region_size, "show_cursor": True},
+        )
+        assert result.success, f"show_cursor capture failed: {result.error}"
+        image = decode_screenshot(result.content)
+
+        # Крест курсора рисуется цветом RGBA(220, 0, 0, 200) — ищем красноватые пиксели
+        has_red = find_color_in_image(image, (160, 0, 0), tolerance=70)
+        assert has_red, "Cursor crosshair should produce reddish pixels near cursor position"
+
+    @pytest.mark.gui
+    def test_show_rulers_darkens_top_band(self, mcp_client: MCPClient):
+        """show_rulers=true создаёт тёмную полосу (20px) вверху изображения"""
+        result = mcp_client.call_tool(
+            "screen_capture",
+            {"x": 0, "y": 0, "width": 400, "height": 200, "show_rulers": True},
+        )
+        assert result.success, f"show_rulers capture failed: {result.error}"
+        image = decode_screenshot(result.content)
+        pixels = image.load()
+        width = image.width
+
+        # Верхняя полоса линейки (y=5): фон RGBA(35,35,35,210) → очень тёмная
+        ruler_row = [pixels[x, 5] for x in range(30, min(width, 400))]
+        avg_brightness = sum((p[0] + p[1] + p[2]) / 3 for p in ruler_row) / len(ruler_row)
+
+        assert avg_brightness < 150, (
+            f"Ruler band should be dark (brightness < 150), got {avg_brightness:.1f}"
+        )
+
+    @pytest.mark.gui
+    def test_show_rulers_darkens_left_band(self, mcp_client: MCPClient):
+        """show_rulers=true создаёт тёмную полосу (20px) слева изображения"""
+        result = mcp_client.call_tool(
+            "screen_capture",
+            {"x": 0, "y": 0, "width": 400, "height": 200, "show_rulers": True},
+        )
+        assert result.success
+        image = decode_screenshot(result.content)
+        pixels = image.load()
+        height = image.height
+
+        # Левая полоса линейки (x=5): такой же тёмный фон
+        ruler_col = [pixels[5, y] for y in range(30, min(height, 200))]
+        avg_brightness = sum((p[0] + p[1] + p[2]) / 3 for p in ruler_col) / len(ruler_col)
+
+        assert avg_brightness < 150, (
+            f"Left ruler band should be dark (brightness < 150), got {avg_brightness:.1f}"
+        )
+
+    @pytest.mark.gui
+    def test_show_grid_custom_size(self, mcp_client: MCPClient):
+        """grid_size параметр принимается без ошибок"""
+        result = mcp_client.call_tool("screen_capture", {"show_grid": True, "grid_size": 50})
+        assert result.success, f"show_grid with grid_size=50 failed: {result.error}"
+        image = decode_screenshot(result.content)
+        assert image.width > 0 and image.height > 0
+
+    @pytest.mark.gui
+    def test_show_grid_large_size(self, mcp_client: MCPClient):
+        """grid_size=200 принимается без ошибок"""
+        result = mcp_client.call_tool("screen_capture", {"show_grid": True, "grid_size": 200})
+        assert result.success, f"show_grid with grid_size=200 failed: {result.error}"
+
+    @pytest.mark.gui
+    def test_no_annotations_by_default(self, mcp_client: MCPClient):
+        """По умолчанию аннотации отключены (инструмент работает как раньше)"""
+        result = mcp_client.call_tool("screen_capture", {"x": 0, "y": 0, "width": 100, "height": 100})
+        assert result.success, f"Default screen_capture failed: {result.error}"
+        image = decode_screenshot(result.content)
+        assert image.width == 100 and image.height == 100
+
+
 class TestScreenIntegration:
     """Интеграционные тесты для screen tools"""
 
