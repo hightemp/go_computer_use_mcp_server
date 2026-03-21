@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.11
 
 require (
-	github.com/hightemp/robotgo v0.0.0-20260117073002-10e2ba4b35b5
+	github.com/hightemp/robotgo v0.0.0-20260321110747-d991ebf06869
 	github.com/mark3labs/mcp-go v0.31.0
 )
 

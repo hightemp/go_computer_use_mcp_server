@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	stdImage "image"
 	"image/png"
 	"log"
 	"os"
@@ -654,6 +655,12 @@ func screenCaptureHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 	height := getIntArg(args, "height", -1)
 	displayId := getIntArg(args, "display_id", -1)
 
+	// Annotation options
+	showCursor := getBoolArg(args, "show_cursor", false)
+	showGrid := getBoolArg(args, "show_grid", false)
+	gridSize := getIntArg(args, "grid_size", 100)
+	showRulers := getBoolArg(args, "show_rulers", false)
+
 	// Validate display_id if provided
 	if displayId >= 0 {
 		numDisplays := robotgo.DisplaysNum()
@@ -662,7 +669,7 @@ func screenCaptureHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 		}
 	}
 
-	// Use CaptureImg which is safer and returns error
+	// Build capture args
 	var captureArgs []int
 
 	if displayId >= 0 {
@@ -671,15 +678,34 @@ func screenCaptureHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 		defer func() { robotgo.DisplayID = -1 }() // Reset after capture
 	}
 
+	offsetX, offsetY := 0, 0
 	if x >= 0 && y >= 0 && width > 0 && height > 0 {
 		captureArgs = append(captureArgs, x, y, width, height)
+		offsetX = x
+		offsetY = y
 	}
 
-	img, err := robotgo.CaptureImg(captureArgs...)
+	// Capture — with annotations if any are requested
+	var img stdImage.Image
+	var err error
+
+	if showCursor || showGrid || showRulers {
+		annotOpts := robotgo.AnnotationOptions{
+			ShowCursor: showCursor,
+			ShowGrid:   showGrid,
+			GridSize:   gridSize,
+			ShowRulers: showRulers,
+			OffsetX:    offsetX,
+			OffsetY:    offsetY,
+		}
+		img, err = robotgo.CaptureImgWithAnnotations(annotOpts, captureArgs...)
+	} else {
+		img, err = robotgo.CaptureImg(captureArgs...)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to capture screen: %w", err)
 	}
-
 	if img == nil {
 		return nil, fmt.Errorf("failed to capture screen: nil image returned")
 	}
@@ -1321,12 +1347,19 @@ func registerScreenTools(mcpServer *server.MCPServer) {
 
 	// screen_capture
 	mcpServer.AddTool(mcp.NewTool("screen_capture",
-		mcp.WithDescription("Capture screenshot (returns base64 PNG)"),
+		mcp.WithDescription("Capture screenshot (returns base64 PNG). Supports optional visual annotations that help AI agents accurately determine pixel coordinates:\n"+
+			"- show_cursor: draws a semi-transparent red crosshair at the current mouse position with an (x,y) label\n"+
+			"- show_grid: draws a blue-grey coordinate grid with numeric labels every grid_size pixels\n"+
+			"- show_rulers: draws pixel rulers with tick marks along the top and left edges"),
 		mcp.WithNumber("x", mcp.Description("X coordinate (optional)")),
 		mcp.WithNumber("y", mcp.Description("Y coordinate (optional)")),
 		mcp.WithNumber("width", mcp.Description("Width (optional)")),
 		mcp.WithNumber("height", mcp.Description("Height (optional)")),
 		mcp.WithNumber("display_id", mcp.Description("Display ID (optional)")),
+		mcp.WithBoolean("show_cursor", mcp.Description("Draw a red crosshair at the current mouse cursor position with (x,y) label")),
+		mcp.WithBoolean("show_grid", mcp.Description("Draw a coordinate grid overlay with numeric labels")),
+		mcp.WithNumber("grid_size", mcp.Description("Grid spacing in pixels (default: 100, only used with show_grid)")),
+		mcp.WithBoolean("show_rulers", mcp.Description("Draw pixel rulers along the top and left edges")),
 	), withDisplayCheck(screenCaptureHandler))
 
 	// screen_capture_save
