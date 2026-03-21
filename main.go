@@ -21,10 +21,14 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-const (
-	ServerName    = "go_computer_use_mcp_server"
-	ServerVersion = "1.0.0"
-)
+const ServerName = "go_computer_use_mcp_server"
+
+// ServerVersion is set at build time via:
+//
+//	go build -ldflags "-X main.ServerVersion=$(cat VERSION)"
+//
+// Falls back to "dev" when built without the flag (e.g. go run .).
+var ServerVersion = "dev"
 
 // ==================== DISPLAY CHECK ====================
 

@@ -8,29 +8,31 @@ VERSION := $(shell cat VERSION | tr -d '[:space:]')
 #   make release FORCE=1
 FORCE ?=
 
+LDFLAGS := -s -w -X main.ServerVersion=$(VERSION)
+
 # Build for current platform
 build:
-	go build -ldflags "-s -w" -o $(BINARY_NAME) .
+	go build -ldflags "$(LDFLAGS)" -o $(BINARY_NAME) .
 
 # Build for Linux (amd64)
 build-linux:
-	GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o $(BINARY_NAME)-linux-amd64 .
+	GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(BINARY_NAME)-linux-amd64 .
 
 # Build for Linux (arm64)
 build-linux-arm64:
-	GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o $(BINARY_NAME)-linux-arm64 .
+	GOOS=linux GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(BINARY_NAME)-linux-arm64 .
 
 # Build for Windows (amd64)
 build-windows:
-	GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o $(BINARY_NAME)-windows-amd64.exe .
+	GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(BINARY_NAME)-windows-amd64.exe .
 
 # Build for macOS (amd64)
 build-darwin:
-	GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o $(BINARY_NAME)-darwin-amd64 .
+	GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(BINARY_NAME)-darwin-amd64 .
 
 # Build for macOS (arm64 - Apple Silicon)
 build-darwin-arm64:
-	GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o $(BINARY_NAME)-darwin-arm64 .
+	GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(BINARY_NAME)-darwin-arm64 .
 
 # Build for all platforms
 build-all: build-linux build-linux-arm64 build-windows build-darwin build-darwin-arm64
@@ -45,7 +47,7 @@ run-stdio:
 
 # Install to GOPATH/bin
 install:
-	go install -ldflags "-s -w" .
+	go install -ldflags "$(LDFLAGS)" .
 
 # Download dependencies
 deps:

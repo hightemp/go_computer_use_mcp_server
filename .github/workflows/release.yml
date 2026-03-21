@@ -93,6 +93,12 @@ jobs:
             mingw-w64-x86_64-leptonica
             mingw-w64-x86_64-pkg-config
 
+      # ── Read version from VERSION file ──────────────────────────────────────
+      - name: Read version
+        id: version
+        shell: bash
+        run: echo "version=$(cat VERSION | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+
       # ── Build ────────────────────────────────────────────────────────────────
       - name: Build (Linux / macOS)
         if: matrix.goos != 'windows'
@@ -101,7 +107,8 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "1"
         run: |
-          go build -ldflags "-s -w" \
+          go build \
+            -ldflags "-s -w -X main.ServerVersion=${{ steps.version.outputs.version }}" \
             -o "go_computer_use_mcp_server-${{ matrix.suffix }}" .
 
       - name: Build (Windows)
@@ -115,7 +122,8 @@ jobs:
           PKG_CONFIG_PATH: "C:/msys64/mingw64/lib/pkgconfig"
         run: |
           export PATH="/c/msys64/mingw64/bin:$PATH"
-          go build -ldflags "-s -w" \
+          go build \
+            -ldflags "-s -w -X main.ServerVersion=${{ steps.version.outputs.version }}" \
             -o "go_computer_use_mcp_server-windows-amd64.exe" .
 
       # ── Upload artifact for the release job ─────────────────────────────────
