@@ -1,9 +1,12 @@
 .PHONY: build build-linux build-windows build-darwin build-all run install deps clean \
         test test-system test-process test-screen test-mouse test-keyboard test-window test-no-gui \
-        release release-force
+        release
 
 BINARY_NAME=go_computer_use_mcp_server
-VERSION=1.0.0
+VERSION := $(shell cat VERSION | tr -d '[:space:]')
+# Optional force flag — set to any non-empty value to force-overwrite the tag:
+#   make release FORCE=1
+FORCE ?=
 
 # Build for current platform
 build:
@@ -60,35 +63,28 @@ clean:
 
 # ==================== Release ====================
 
-# Bump version in package.json, commit, tag v$(VERSION), and push.
-# Usage: make release VERSION=1.2.3
+# Read version from VERSION file, update package.json, commit, tag, and push.
+# Usage:
+#   make release            — normal release  (fails if tag already exists)
+#   make release FORCE=1    — force-overwrite existing tag
 release:
-	@if [ -z "$(VERSION)" ]; then echo "ERROR: VERSION is not set. Usage: make release VERSION=x.y.z"; exit 1; fi
-	@echo "Releasing v$(VERSION)..."
+	@if [ -z "$(VERSION)" ]; then echo "ERROR: VERSION file is empty or missing"; exit 1; fi
+	@echo "Releasing v$(VERSION) (FORCE=$(FORCE))..."
 	@sed -i 's/"version": ".*"/"version": "$(VERSION)"/' package.json
 	@if ! git diff --quiet package.json; then \
-		git add package.json; \
+		git add package.json VERSION; \
 		git commit -m "chore: bump version to $(VERSION)"; \
 	fi
-	git tag v$(VERSION)
-	git push origin HEAD
-	git push origin v$(VERSION)
-	@echo "Released v$(VERSION)"
-
-# Force-retag an existing version (re-release without bumping).
-# Usage: make release-force VERSION=1.2.3
-release-force:
-	@if [ -z "$(VERSION)" ]; then echo "ERROR: VERSION is not set. Usage: make release-force VERSION=x.y.z"; exit 1; fi
-	@echo "Force-releasing v$(VERSION)..."
-	@sed -i 's/"version": ".*"/"version": "$(VERSION)"/' package.json
-	@if ! git diff --quiet package.json; then \
-		git add package.json; \
-		git commit -m "chore: bump version to $(VERSION)"; \
+	@if [ -n "$(FORCE)" ]; then \
+		git tag -f v$(VERSION); \
+		git push origin HEAD; \
+		git push -f origin v$(VERSION); \
+	else \
+		git tag v$(VERSION); \
+		git push origin HEAD; \
+		git push origin v$(VERSION); \
 	fi
-	git tag -f v$(VERSION)
-	git push origin HEAD
-	git push -f origin v$(VERSION)
-	@echo "Force-released v$(VERSION)"
+	@echo "Done: v$(VERSION)"
 
 # ==================== Tests ====================
 
@@ -161,6 +157,6 @@ help:
 	@echo "  deps               - Download dependencies"
 	@echo "  clean              - Remove build artifacts"
 	@echo ""
-	@echo "Release:"
-	@echo "  release            - Bump package.json, tag v\$$VERSION, push  (make release VERSION=1.2.3)"
-	@echo "  release-force      - Same but force-overwrites the tag         (make release-force VERSION=1.2.3)"
+	@echo "Release (version is read from the VERSION file):"
+	@echo "  release            - Update package.json, tag vX.Y.Z, push"
+	@echo "  release FORCE=1    - Same but force-overwrites an existing tag"
