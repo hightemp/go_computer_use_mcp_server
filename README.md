@@ -1,5 +1,10 @@
 # go_computer_use_mcp_server
 
+> [!WARNING]
+> This server is intended to run as a **trusted local MCP tool**.  
+> It currently provides **broad local desktop control** and is **not sandboxed by default**.  
+> Do not expose it to untrusted networks, users, or agents without additional security controls.
+
 MCP (Model Context Protocol) server in Go for computer automation. Uses [robotgo](https://github.com/hightemp/robotgo) library for desktop automation.
 
 ## Features
