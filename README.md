@@ -28,6 +28,18 @@ npx go-computer-use-mcp-server -t stdio
 npx go-computer-use-mcp-server -t sse -h 0.0.0.0 -p 8080
 ```
 
+## Official MCP Registry
+
+This server is prepared for publication in the Official MCP Registry as:
+
+```text
+io.github.hightemp/go-computer-use-mcp-server
+```
+
+Registry metadata is defined in [`server.json`](server.json). The npm package includes a matching `mcpName` field in [`package.json`](package.json), which the registry uses to verify package ownership.
+
+For maintainers, the release workflow publishes the npm package first, waits until that package version is visible in the npm registry, then publishes `server.json` with GitHub OIDC authentication.
+
 ## Integration with AI Tools
 
 ### Claude Desktop
