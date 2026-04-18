@@ -1,6 +1,6 @@
 .PHONY: build build-linux build-windows build-darwin build-all run install deps clean \
         test test-system test-process test-screen test-mouse test-keyboard test-window test-no-gui \
-        release
+        release sync-version
 
 BINARY_NAME=go_computer_use_mcp_server
 VERSION := $(shell cat VERSION | tr -d '[:space:]')
@@ -65,16 +65,19 @@ clean:
 
 # ==================== Release ====================
 
-# Read version from VERSION file, update package.json, commit, tag, and push.
+# Read version from VERSION file, update package metadata, commit, tag, and push.
 # Usage:
 #   make release            — normal release  (fails if tag already exists)
 #   make release FORCE=1    — force-overwrite existing tag
-release:
+sync-version:
 	@if [ -z "$(VERSION)" ]; then echo "ERROR: VERSION file is empty or missing"; exit 1; fi
+	@node -e 'const fs = require("node:fs"); const version = "$(VERSION)"; const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8")); packageJson.version = version; fs.writeFileSync("package.json", JSON.stringify(packageJson, null, 2) + "\n"); const serverJson = JSON.parse(fs.readFileSync("server.json", "utf8")); serverJson.version = version; for (const pkg of serverJson.packages || []) pkg.version = version; fs.writeFileSync("server.json", JSON.stringify(serverJson, null, 2) + "\n");'
+	@echo "Synced package.json and server.json to v$(VERSION)"
+
+release: sync-version
 	@echo "Releasing v$(VERSION) (FORCE=$(FORCE))..."
-	@sed -i 's/"version": ".*"/"version": "$(VERSION)"/' package.json
-	@if ! git diff --quiet package.json; then \
-		git add package.json VERSION; \
+	@if ! git diff --quiet package.json server.json VERSION; then \
+		git add package.json server.json VERSION; \
 		git commit -m "chore: bump version to $(VERSION)"; \
 	fi
 	@if [ -n "$(FORCE)" ]; then \
@@ -160,5 +163,6 @@ help:
 	@echo "  clean              - Remove build artifacts"
 	@echo ""
 	@echo "Release (version is read from the VERSION file):"
-	@echo "  release            - Update package.json, tag vX.Y.Z, push"
+	@echo "  sync-version       - Update package.json and server.json from VERSION"
+	@echo "  release            - Update package.json/server.json, tag vX.Y.Z, push"
 	@echo "  release FORCE=1    - Same but force-overwrites an existing tag"
