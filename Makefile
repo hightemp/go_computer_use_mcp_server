@@ -71,7 +71,7 @@ clean:
 #   make release FORCE=1    — force-overwrite existing tag
 sync-version:
 	@if [ -z "$(VERSION)" ]; then echo "ERROR: VERSION file is empty or missing"; exit 1; fi
-	@node -e 'const fs = require("node:fs"); const version = "$(VERSION)"; const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8")); packageJson.version = version; fs.writeFileSync("package.json", JSON.stringify(packageJson, null, 2) + "\n"); const serverJson = JSON.parse(fs.readFileSync("server.json", "utf8")); serverJson.version = version; for (const pkg of serverJson.packages || []) pkg.version = version; fs.writeFileSync("server.json", JSON.stringify(serverJson, null, 2) + "\n");'
+	@node scripts/sync-version.js "$(VERSION)"
 	@echo "Synced package.json and server.json to v$(VERSION)"
 
 release: sync-version
