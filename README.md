@@ -1,5 +1,13 @@
 # go_computer_use_mcp_server
 
+[![npm version](https://img.shields.io/npm/v/go-computer-use-mcp-server)](https://www.npmjs.com/package/go-computer-use-mcp-server)
+[![npm downloads](https://img.shields.io/npm/dt/go-computer-use-mcp-server)](https://www.npmjs.com/package/go-computer-use-mcp-server)
+[![npm downloads/month](https://img.shields.io/npm/dm/go-computer-use-mcp-server)](https://www.npmjs.com/package/go-computer-use-mcp-server)
+[![GitHub Downloads](https://img.shields.io/github/downloads/hightemp/go_computer_use_mcp_server/total)](https://github.com/hightemp/go_computer_use_mcp_server/releases)
+[![GitHub release](https://img.shields.io/github/v/release/hightemp/go_computer_use_mcp_server)](https://github.com/hightemp/go_computer_use_mcp_server/releases/latest)
+[![Go version](https://img.shields.io/github/go-mod/go-version/hightemp/go_computer_use_mcp_server)](go.mod)
+[![Go Report Card](https://goreportcard.com/badge/github.com/hightemp/go_computer_use_mcp_server)](https://goreportcard.com/report/github.com/hightemp/go_computer_use_mcp_server)
+
 > [!WARNING]
 > This server is intended to run as a **trusted local MCP tool**.  
 > It currently provides **broad local desktop control** and is **not sandboxed by default**.  
